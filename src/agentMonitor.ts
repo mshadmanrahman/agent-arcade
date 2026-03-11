@@ -72,33 +72,50 @@ export class AgentMonitor {
   private pollInterval: NodeJS.Timeout | null = null;
   private disposed = false;
   private agentCounter = 0;
-  /** Only detect sessions created after the monitor starts */
-  private monitorStartTime = 0;
+  /** Session files that existed before the monitor started (ignored) */
+  private preExistingFiles = new Set<string>();
 
   constructor(onChange: AgentChangeCallback) {
     this.onChange = onChange;
   }
 
   start(): void {
-    // Record start time: only sessions created AFTER this are shown
-    this.monitorStartTime = Date.now();
+    // Snapshot ALL existing session files so we can ignore them.
+    // Only sessions that appear AFTER this point will become agents.
+    this.snapshotExistingFiles();
 
-    const projectDirs = this.getProjectDirs();
-    if (projectDirs.length === 0) {
-      console.log('Agent Arcade: No Claude Code project directories found');
-      return;
-    }
+    console.log(`Agent Arcade: Ignoring ${this.preExistingFiles.size} pre-existing session(s)`);
 
-    console.log(`Agent Arcade: Watching ${projectDirs.length} project dir(s)`);
-
-    // Poll for changes
+    // Poll for new sessions
     this.pollInterval = setInterval(() => {
       if (this.disposed) return;
+      const projectDirs = this.getProjectDirs();
       for (const dir of projectDirs) {
         this.scanSessions(dir);
       }
       this.checkTranscripts();
     }, POLL_INTERVAL_MS);
+  }
+
+  /** Record all currently existing .jsonl files so we skip them later */
+  private snapshotExistingFiles(): void {
+    const homeDir = os.homedir();
+    const claudeProjectsDir = path.join(homeDir, '.claude', 'projects');
+    if (!fs.existsSync(claudeProjectsDir)) return;
+
+    try {
+      const entries = fs.readdirSync(claudeProjectsDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        const dirPath = path.join(claudeProjectsDir, entry.name);
+        const files = this.findSessionFiles(dirPath);
+        for (const f of files) {
+          this.preExistingFiles.add(f);
+        }
+      }
+    } catch {
+      // Skip
+    }
   }
 
   stop(): void {
@@ -188,12 +205,13 @@ export class AgentMonitor {
         const sessionId = path.basename(sessionFile, '.jsonl');
         if (this.agents.has(sessionId)) continue;
 
-        // Only add sessions CREATED after the monitor started and actively written to
+        // Skip pre-existing sessions; only add genuinely new ones
+        if (this.preExistingFiles.has(sessionFile)) continue;
+
         try {
           const stat = fs.statSync(sessionFile);
-          const createdAfterStart = stat.birthtimeMs >= this.monitorStartTime;
           const recentlyModified = (Date.now() - stat.mtimeMs) < ACTIVE_SESSION_AGE_MS;
-          if (createdAfterStart && recentlyModified) {
+          if (recentlyModified) {
             this.addAgent(sessionId, sessionFile);
           }
         } catch {
