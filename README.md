@@ -1,4 +1,4 @@
-# Pixel Agents
+# Agent Arcade
 
 **Visualize your Claude Code agents as pixel art characters in a virtual office.**
 
@@ -28,8 +28,8 @@ Built for teams using Claude Code who want a fun, at-a-glance view of what their
 
 ```bash
 # Clone and build
-git clone https://github.com/mshadmanrahman/pixel-agents.git
-cd pixel-agents
+git clone https://github.com/mshadmanrahman/agent-arcade.git
+cd agent-arcade
 npm install
 npm run compile
 
@@ -37,16 +37,16 @@ npm run compile
 npx vsce package --no-dependencies
 
 # Install in VS Code / Cursor
-code --install-extension pixel-agents-0.1.0.vsix
+code --install-extension agent-arcade-0.1.0.vsix
 # or
-cursor --install-extension pixel-agents-0.1.0.vsix
+cursor --install-extension agent-arcade-0.1.0.vsix
 ```
 
 ### From source (development)
 
 ```bash
-git clone https://github.com/mshadmanrahman/pixel-agents.git
-cd pixel-agents
+git clone https://github.com/mshadmanrahman/agent-arcade.git
+cd agent-arcade
 npm install
 npm run compile
 ```
@@ -56,7 +56,7 @@ Press **F5** in VS Code to launch the Extension Development Host.
 ## Usage
 
 1. Open the command palette (**Cmd+Shift+P** / **Ctrl+Shift+P**)
-2. Run **"Pixel Agents: Open Office"**
+2. Run **"Agent Arcade: Open Office"**
 3. Active Claude Code sessions appear as characters automatically
 4. Click **+ Agent** to spawn a new Claude Code terminal
 5. Click any character to inspect its status
@@ -119,14 +119,14 @@ At build time, PNGs are converted to base64 data URIs and embedded in the JS bun
 
 | Setting | Default | Description |
 |---|---|---|
-| `pixelAgents.soundEnabled` | `true` | Play notification when an agent completes |
-| `pixelAgents.transcriptPath` | `""` | Custom Claude Code transcript path (auto-detected if empty) |
+| `agentArcade.soundEnabled` | `true` | Play notification when an agent completes |
+| `agentArcade.transcriptPath` | `""` | Custom Claude Code transcript path (auto-detected if empty) |
 
 ## Credits and Acknowledgments
 
 This project is inspired by and builds upon the work of several creators:
 
-- **[Pixel Agents](https://github.com/pablodelucca/pixel-agents)** by Pablo De Lucca: the original VS Code extension that pioneered the concept of visualizing AI agents as pixel art office characters. This project follows the same architecture patterns, sprite format, and visual language.
+- **[Agent Arcade](https://github.com/pablodelucca/agent-arcade)** by Pablo De Lucca: the original VS Code extension that pioneered the concept of visualizing AI agents as pixel art office characters. This project follows the same architecture patterns, sprite format, and visual language.
 
 - **[Metro City Character Pack](https://jik-a-4.itch.io/metrocity-free-topdown-character-pack)** by JIK-A-4: the character sprites used in this extension. Free for personal and commercial use.
 

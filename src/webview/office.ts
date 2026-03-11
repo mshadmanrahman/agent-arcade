@@ -93,7 +93,7 @@ export function getDeskPositions(): Array<{ desk: { x: number; y: number }; chai
   return desks;
 }
 
-/** Color palette: original pixel-agents dark theme (#1e1e2e base) */
+/** Color palette: original agent-arcade dark theme (#1e1e2e base) */
 const TILE_COLORS: Record<TileType, string> = {
   floor: '#2a2a3e',
   wall: '#1e1e2e',

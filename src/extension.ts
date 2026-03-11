@@ -6,7 +6,7 @@
  */
 
 import * as vscode from 'vscode';
-import { PixelAgentsPanel } from './webviewProvider';
+import { AgentArcadePanel } from './webviewProvider';
 import { AgentMonitor, DetectedAgent } from './agentMonitor';
 
 let monitor: AgentMonitor | null = null;
@@ -14,27 +14,27 @@ let statusBarItem: vscode.StatusBarItem;
 let currentAgentCount = 0;
 
 export function activate(context: vscode.ExtensionContext): void {
-  console.log('Pixel Agents: Extension activated');
+  console.log('Agent Arcade: Extension activated');
 
   // Status bar item
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-  statusBarItem.command = 'pixelAgents.openOffice';
+  statusBarItem.command = 'agentArcade.openOffice';
   updateStatusBar(0);
   statusBarItem.show();
   context.subscriptions.push(statusBarItem);
 
   // Register commands
-  const openOfficeCmd = vscode.commands.registerCommand('pixelAgents.openOffice', () => {
-    const panel = PixelAgentsPanel.createOrShow(context.extensionUri);
+  const openOfficeCmd = vscode.commands.registerCommand('agentArcade.openOffice', () => {
+    const panel = AgentArcadePanel.createOrShow(context.extensionUri);
     setupPanelBridge(panel);
   });
 
-  const toggleSoundCmd = vscode.commands.registerCommand('pixelAgents.toggleSound', () => {
-    const config = vscode.workspace.getConfiguration('pixelAgents');
+  const toggleSoundCmd = vscode.commands.registerCommand('agentArcade.toggleSound', () => {
+    const config = vscode.workspace.getConfiguration('agentArcade');
     const current = config.get<boolean>('soundEnabled', true);
     config.update('soundEnabled', !current, vscode.ConfigurationTarget.Global);
     vscode.window.showInformationMessage(
-      `Pixel Agents: Sound ${!current ? 'enabled' : 'disabled'}`
+      `Agent Arcade: Sound ${!current ? 'enabled' : 'disabled'}`
     );
   });
 
@@ -79,7 +79,7 @@ function getVariantForAgent(id: string): number {
 }
 
 function handleAgentChanges(agents: Map<string, DetectedAgent>): void {
-  const panel = PixelAgentsPanel.currentPanel;
+  const panel = AgentArcadePanel.currentPanel;
 
   // Detect new agents
   agents.forEach((agent, id) => {
@@ -117,11 +117,11 @@ function handleAgentChanges(agents: Map<string, DetectedAgent>): void {
 
         // Sound notification on completion
         if (agent.activity === 'done' && prev.activity !== 'done') {
-          const soundEnabled = vscode.workspace.getConfiguration('pixelAgents')
+          const soundEnabled = vscode.workspace.getConfiguration('agentArcade')
             .get<boolean>('soundEnabled', true);
           if (soundEnabled) {
             vscode.window.showInformationMessage(
-              `Pixel Agents: ${agent.name} completed their task!`
+              `Agent Arcade: ${agent.name} completed their task!`
             );
           }
 
@@ -141,7 +141,7 @@ function handleAgentChanges(agents: Map<string, DetectedAgent>): void {
         // as new agents in the next iteration. The webview handles the
         // spawning animation when it receives agentAdd with a parentId.
         console.log(
-          `Pixel Agents: ${agent.name} spawned ${agent.spawnedChildIds.length - prev.spawnedChildIds.length} sub-agent(s)`
+          `Agent Arcade: ${agent.name} spawned ${agent.spawnedChildIds.length - prev.spawnedChildIds.length} sub-agent(s)`
         );
       }
     }
@@ -171,7 +171,7 @@ function handleAgentChanges(agents: Map<string, DetectedAgent>): void {
   }
 }
 
-function setupPanelBridge(panel: PixelAgentsPanel): void {
+function setupPanelBridge(panel: AgentArcadePanel): void {
   panel.onMessage((msg) => {
     switch (msg.type) {
       case 'ready': {
@@ -198,12 +198,12 @@ function setupPanelBridge(panel: PixelAgentsPanel): void {
       }
       case 'agentClicked': {
         const payload = msg.payload as { id: string; name: string };
-        console.log(`Pixel Agents: Agent clicked - ${payload.name} (${payload.id})`);
+        console.log(`Agent Arcade: Agent clicked - ${payload.name} (${payload.id})`);
         break;
       }
       case 'agentDeparted': {
         const payload = msg.payload as { id: string };
-        console.log(`Pixel Agents: Agent departed - ${payload.id}`);
+        console.log(`Agent Arcade: Agent departed - ${payload.id}`);
         break;
       }
       case 'spawnAgent': {
@@ -239,7 +239,7 @@ function spawnClaudeCodeAgent(prompt: string): void {
   terminal.sendText(command);
 
   vscode.window.showInformationMessage(
-    `Pixel Agents: Spawned ${terminalName}${prompt ? ' with task' : ''}`
+    `Agent Arcade: Spawned ${terminalName}${prompt ? ' with task' : ''}`
   );
 }
 

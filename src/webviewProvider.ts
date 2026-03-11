@@ -8,8 +8,8 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
-export class PixelAgentsPanel {
-  public static currentPanel: PixelAgentsPanel | undefined;
+export class AgentArcadePanel {
+  public static currentPanel: AgentArcadePanel | undefined;
   private readonly panel: vscode.WebviewPanel;
   private readonly extensionUri: vscode.Uri;
   private disposables: vscode.Disposable[] = [];
@@ -34,17 +34,17 @@ export class PixelAgentsPanel {
     );
   }
 
-  static createOrShow(extensionUri: vscode.Uri): PixelAgentsPanel {
+  static createOrShow(extensionUri: vscode.Uri): AgentArcadePanel {
     const column = vscode.ViewColumn.Beside;
 
-    if (PixelAgentsPanel.currentPanel) {
-      PixelAgentsPanel.currentPanel.panel.reveal(column);
-      return PixelAgentsPanel.currentPanel;
+    if (AgentArcadePanel.currentPanel) {
+      AgentArcadePanel.currentPanel.panel.reveal(column);
+      return AgentArcadePanel.currentPanel;
     }
 
     const panel = vscode.window.createWebviewPanel(
-      'pixelAgents',
-      'Pixel Agents',
+      'agentArcade',
+      'Agent Arcade',
       column,
       {
         enableScripts: true,
@@ -53,8 +53,8 @@ export class PixelAgentsPanel {
       }
     );
 
-    PixelAgentsPanel.currentPanel = new PixelAgentsPanel(panel, extensionUri);
-    return PixelAgentsPanel.currentPanel;
+    AgentArcadePanel.currentPanel = new AgentArcadePanel(panel, extensionUri);
+    return AgentArcadePanel.currentPanel;
   }
 
   onMessage(handler: (msg: { type: string; payload: unknown }) => void): void {
@@ -181,7 +181,7 @@ export class PixelAgentsPanel {
   }
 
   dispose(): void {
-    PixelAgentsPanel.currentPanel = undefined;
+    AgentArcadePanel.currentPanel = undefined;
     this.panel.dispose();
     while (this.disposables.length) {
       const d = this.disposables.pop();

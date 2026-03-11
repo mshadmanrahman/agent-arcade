@@ -17,5 +17,5 @@ Initial release.
 
 ### Credits
 
-- Inspired by [Pixel Agents](https://github.com/pablodelucca/pixel-agents) by Pablo De Lucca
+- Inspired by [Agent Arcade](https://github.com/pablodelucca/pixel-agents) by Pablo De Lucca
 - Character sprites from [Metro City Character Pack](https://jik-a-4.itch.io/metrocity-free-topdown-character-pack) by JIK-A-4

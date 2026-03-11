@@ -1,13 +1,13 @@
 {
-  "name": "pixel-agents",
-  "displayName": "Pixel Agents",
+  "name": "agent-arcade",
+  "displayName": "Agent Arcade",
   "description": "Visualize Claude Code agents as pixel art characters in a virtual office",
   "version": "0.1.0",
   "publisher": "connectshadman",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mshadmanrahman/pixel-agents"
+    "url": "https://github.com/mshadmanrahman/agent-arcade"
   },
   "keywords": [
     "claude",
@@ -31,23 +31,23 @@
   "contributes": {
     "commands": [
       {
-        "command": "pixelAgents.openOffice",
-        "title": "Pixel Agents: Open Office"
+        "command": "agentArcade.openOffice",
+        "title": "Agent Arcade: Open Office"
       },
       {
-        "command": "pixelAgents.toggleSound",
-        "title": "Pixel Agents: Toggle Sound"
+        "command": "agentArcade.toggleSound",
+        "title": "Agent Arcade: Toggle Sound"
       }
     ],
     "configuration": {
-      "title": "Pixel Agents",
+      "title": "Agent Arcade",
       "properties": {
-        "pixelAgents.soundEnabled": {
+        "agentArcade.soundEnabled": {
           "type": "boolean",
           "default": true,
           "description": "Play sound when an agent completes work"
         },
-        "pixelAgents.transcriptPath": {
+        "agentArcade.transcriptPath": {
           "type": "string",
           "default": "",
           "description": "Custom path to Claude Code transcripts (leave empty for auto-detect)"

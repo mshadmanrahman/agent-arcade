@@ -88,11 +88,11 @@ export class AgentMonitor {
   start(): void {
     const projectDirs = this.getProjectDirs();
     if (projectDirs.length === 0) {
-      console.log('Pixel Agents: No Claude Code project directories found');
+      console.log('Agent Arcade: No Claude Code project directories found');
       return;
     }
 
-    console.log(`Pixel Agents: Watching ${projectDirs.length} project dir(s)`);
+    console.log(`Agent Arcade: Watching ${projectDirs.length} project dir(s)`);
 
     // Initial scan
     for (const dir of projectDirs) {
@@ -126,7 +126,7 @@ export class AgentMonitor {
     const claudeProjectsDir = path.join(homeDir, '.claude', 'projects');
 
     // Check custom path override
-    const customPath = vscode.workspace.getConfiguration('pixelAgents').get<string>('transcriptPath');
+    const customPath = vscode.workspace.getConfiguration('agentArcade').get<string>('transcriptPath');
     if (customPath && fs.existsSync(customPath)) {
       return [customPath];
     }
@@ -208,7 +208,7 @@ export class AgentMonitor {
         }
       }
     } catch (err) {
-      console.error('Pixel Agents: Error scanning sessions:', err);
+      console.error('Agent Arcade: Error scanning sessions:', err);
     }
   }
 

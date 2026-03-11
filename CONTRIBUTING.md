@@ -1,4 +1,4 @@
-# Contributing to Pixel Agents
+# Contributing to Agent Arcade
 
 Thanks for your interest in contributing! All contributions are welcome: features, bug fixes, documentation improvements, and more.
 
@@ -15,8 +15,8 @@ This project is licensed under the [MIT License](LICENSE), so your contributions
 ### Setup
 
 ```bash
-git clone https://github.com/mshadmanrahman/pixel-agents.git
-cd pixel-agents
+git clone https://github.com/mshadmanrahman/agent-arcade.git
+cd agent-arcade
 npm install
 npm run compile
 ```
