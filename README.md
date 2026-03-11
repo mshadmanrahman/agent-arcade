@@ -28,7 +28,7 @@ Built for teams using Claude Code who want a fun, at-a-glance view of what their
 
 ```bash
 # Clone and build
-git clone <your-repo-url>
+git clone https://github.com/mshadmanrahman/pixel-agents.git
 cd pixel-agents
 npm install
 npm run compile
@@ -45,7 +45,7 @@ cursor --install-extension pixel-agents-0.1.0.vsix
 ### From source (development)
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/mshadmanrahman/pixel-agents.git
 cd pixel-agents
 npm install
 npm run compile

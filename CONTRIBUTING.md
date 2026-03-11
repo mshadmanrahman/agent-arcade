@@ -15,7 +15,7 @@ This project is licensed under the [MIT License](LICENSE), so your contributions
 ### Setup
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/mshadmanrahman/pixel-agents.git
 cd pixel-agents
 npm install
 npm run compile
