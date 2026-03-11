@@ -7,7 +7,7 @@
 
 import * as vscode from 'vscode';
 import { AgentArcadePanel } from './webviewProvider';
-import { AgentMonitor, DetectedAgent } from './agentMonitor';
+import { AgentMonitor, DetectedAgent, generateAgentName } from './agentMonitor';
 
 let monitor: AgentMonitor | null = null;
 let statusBarItem: vscode.StatusBarItem;
@@ -40,13 +40,30 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(openOfficeCmd, toggleSoundCmd);
 
-  // Start monitoring Claude Code sessions
+  // Start monitoring Claude Code sessions (for transcript-based state updates)
   monitor = new AgentMonitor((agents) => {
     handleAgentChanges(agents);
   });
   monitor.start();
 
-  context.subscriptions.push({
+  // Remove agent character when its terminal is closed
+  const terminalCloseListener = vscode.window.onDidCloseTerminal((terminal) => {
+    const agentId = spawnedTerminals.get(terminal);
+    if (agentId) {
+      spawnedTerminals.delete(terminal);
+      const panel = AgentArcadePanel.currentPanel;
+      if (panel) {
+        panel.postMessage({
+          type: 'agentRemove',
+          payload: { id: agentId },
+        });
+      }
+      currentAgentCount = Math.max(0, currentAgentCount - 1);
+      updateStatusBar(currentAgentCount);
+    }
+  });
+
+  context.subscriptions.push(terminalCloseListener, {
     dispose: () => {
       if (monitor) {
         monitor.stop();
@@ -217,15 +234,17 @@ function setupPanelBridge(panel: AgentArcadePanel): void {
 
 let spawnCounter = 0;
 
-/** Open a new terminal with Claude Code in dangerously-skip-permissions mode */
+/** Open a new terminal with Claude Code and immediately add character to office */
 function spawnClaudeCodeAgent(prompt: string): void {
   spawnCounter++;
-  const terminalName = `Claude Agent ${spawnCounter}`;
+  const agentId = `spawned-${spawnCounter}-${Date.now()}`;
+  const agentName = generateAgentName();
+  const variant = getVariantForAgent(agentId);
+  const terminalName = agentName;
 
   // Build the command
   let command = 'claude --dangerously-skip-permissions';
   if (prompt) {
-    // Escape single quotes in the prompt for shell safety
     const escaped = prompt.replace(/'/g, "'\\''");
     command += ` -p '${escaped}'`;
   }
@@ -235,13 +254,39 @@ function spawnClaudeCodeAgent(prompt: string): void {
     iconPath: new vscode.ThemeIcon('hubot'),
   });
 
-  terminal.show(false); // false = don't take focus from the office view
+  terminal.show(false);
   terminal.sendText(command);
 
+  // Immediately add character to the office (don't wait for transcript)
+  const panel = AgentArcadePanel.currentPanel;
+  if (panel) {
+    panel.postMessage({
+      type: 'agentAdd',
+      payload: {
+        id: agentId,
+        name: agentName,
+        variant,
+        model: 'claude',
+        branch: 'main',
+        taskSummary: prompt ? prompt.slice(0, 60) : 'Waiting for input...',
+      },
+    });
+  }
+
+  // Update status bar
+  currentAgentCount++;
+  updateStatusBar(currentAgentCount);
+
+  // Track spawned agents so they can be removed when terminal closes
+  spawnedTerminals.set(terminal, agentId);
+
   vscode.window.showInformationMessage(
-    `Agent Arcade: Spawned ${terminalName}${prompt ? ' with task' : ''}`
+    `Agent Arcade: ${agentName} has entered the office`
   );
 }
+
+/** Track terminals to agent IDs for cleanup on close */
+const spawnedTerminals = new Map<vscode.Terminal, string>();
 
 export function deactivate(): void {
   if (monitor) {

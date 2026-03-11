@@ -51,7 +51,7 @@ const AGENT_NAMES = [
 /** Track used names to avoid duplicates in the same session */
 const usedNames = new Set<string>();
 
-function generateAgentName(): string {
+export function generateAgentName(): string {
   // Try to find an unused name
   for (let attempt = 0; attempt < 50; attempt++) {
     const name = AGENT_NAMES[Math.floor(Math.random() * AGENT_NAMES.length)];
