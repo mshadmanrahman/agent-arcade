@@ -38,6 +38,41 @@ const STALE_AGENT_TIMEOUT_MS = 120_000; // 2 minutes
 /** Poll interval for scanning sessions */
 const POLL_INTERVAL_MS = 2_000;
 
+/** Fun auto-generated names for agents */
+const AGENT_ADJECTIVES = [
+  'Swift', 'Clever', 'Bold', 'Keen', 'Nimble', 'Sharp', 'Brave', 'Witty',
+  'Sage', 'Deft', 'Sly', 'Calm', 'Bright', 'Quick', 'Steady', 'Fierce',
+  'Cool', 'Lucky', 'Mighty', 'Zen', 'Cosmic', 'Epic', 'Turbo', 'Pixel',
+  'Hyper', 'Ultra', 'Mega', 'Super', 'Quantum', 'Cyber', 'Nova', 'Neon',
+];
+
+const AGENT_NOUNS = [
+  'Fox', 'Owl', 'Wolf', 'Hawk', 'Bear', 'Lynx', 'Raven', 'Panda',
+  'Otter', 'Falcon', 'Badger', 'Crane', 'Tiger', 'Eagle', 'Bison', 'Cobra',
+  'Spark', 'Blaze', 'Storm', 'Frost', 'Drift', 'Forge', 'Pulse', 'Byte',
+  'Glitch', 'Flux', 'Comet', 'Prism', 'Cipher', 'Vector', 'Atlas', 'Orbit',
+];
+
+/** Track used names to avoid duplicates in the same session */
+const usedNames = new Set<string>();
+
+function generateAgentName(): string {
+  // Try to find an unused combination
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const adj = AGENT_ADJECTIVES[Math.floor(Math.random() * AGENT_ADJECTIVES.length)];
+    const noun = AGENT_NOUNS[Math.floor(Math.random() * AGENT_NOUNS.length)];
+    const name = `${adj} ${noun}`;
+    if (!usedNames.has(name)) {
+      usedNames.add(name);
+      return name;
+    }
+  }
+  // Fallback: add a number
+  const adj = AGENT_ADJECTIVES[Math.floor(Math.random() * AGENT_ADJECTIVES.length)];
+  const noun = AGENT_NOUNS[Math.floor(Math.random() * AGENT_NOUNS.length)];
+  return `${adj} ${noun} ${usedNames.size + 1}`;
+}
+
 export class AgentMonitor {
   private agents: Map<string, DetectedAgent> = new Map();
   private filePositions: Map<string, number> = new Map();
@@ -197,6 +232,10 @@ export class AgentMonitor {
 
   private addAgent(sessionId: string, sessionFile: string, parentId?: string): void {
     this.agentCounter++;
+    const name = parentId
+      ? `Mini ${generateAgentName()}`
+      : generateAgentName();
+
     const agent: DetectedAgent = {
       id: sessionId,
       sessionDir: path.dirname(sessionFile),
@@ -205,7 +244,7 @@ export class AgentMonitor {
       activity: 'idle',
       lastMessage: '',
       lastUpdate: Date.now(),
-      name: parentId ? `Sub-Agent ${this.agentCounter}` : `Agent ${this.agentCounter}`,
+      name,
       parentId: parentId || null,
       spawnedChildIds: [],
     };
