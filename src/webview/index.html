@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --pixel-bg: #1e1e2e;
+      --pixel-surface: #252538;
+      --pixel-border: #3a3a52;
+      --pixel-accent: #5a8cff;
+      --pixel-green: #5ac88c;
+      --pixel-text: #cdd6f4;
+      --pixel-dim: #6c7086;
+      --pixel-shadow: 2px 2px 0px #0a0a14;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--pixel-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Courier New', monospace;
+      color: var(--pixel-text);
+      overflow: hidden;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .header h1 {
+      font-size: 14px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--pixel-accent);
+      text-shadow: var(--pixel-shadow);
+    }
+
+    .agent-count {
+      font-size: 11px;
+      color: var(--pixel-dim);
+      background: var(--pixel-surface);
+      border: 2px solid var(--pixel-border);
+      padding: 2px 8px;
+      border-radius: 0;
+    }
+
+    .add-agent-btn {
+      margin-left: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--pixel-green);
+      background: var(--pixel-surface);
+      border: 2px solid var(--pixel-green);
+      padding: 4px 12px;
+      border-radius: 0;
+      cursor: pointer;
+      letter-spacing: 1px;
+      box-shadow: var(--pixel-shadow);
+      transition: background 0.1s;
+    }
+
+    .add-agent-btn:hover {
+      background: #2a3a2e;
+    }
+
+    .add-agent-btn:active {
+      box-shadow: none;
+      transform: translate(2px, 2px);
+    }
+
+    .prompt-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(10, 10, 20, 0.88);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .prompt-overlay.visible {
+      display: flex;
+    }
+
+    .prompt-box {
+      background: var(--pixel-bg);
+      border: 2px solid var(--pixel-accent);
+      border-radius: 0;
+      padding: 20px;
+      width: 400px;
+      max-width: 90%;
+      box-shadow: 4px 4px 0px #0a0a14;
+    }
+
+    .prompt-box h2 {
+      font-size: 13px;
+      color: var(--pixel-accent);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      text-shadow: var(--pixel-shadow);
+    }
+
+    .prompt-box p {
+      font-size: 11px;
+      color: var(--pixel-dim);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    .prompt-box textarea {
+      width: 100%;
+      min-height: 80px;
+      background: var(--pixel-surface);
+      border: 2px solid var(--pixel-border);
+      border-radius: 0;
+      color: var(--pixel-text);
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      padding: 10px;
+      resize: vertical;
+      outline: none;
+    }
+
+    .prompt-box textarea:focus {
+      border-color: var(--pixel-accent);
+    }
+
+    .prompt-box textarea::placeholder {
+      color: #45455a;
+    }
+
+    .prompt-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      justify-content: flex-end;
+    }
+
+    .prompt-actions button {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      padding: 6px 16px;
+      border-radius: 0;
+      cursor: pointer;
+      border: 2px solid;
+      box-shadow: var(--pixel-shadow);
+      transition: background 0.1s;
+    }
+
+    .prompt-actions button:active {
+      box-shadow: none;
+      transform: translate(2px, 2px);
+    }
+
+    .btn-cancel {
+      color: var(--pixel-dim);
+      background: transparent;
+      border-color: var(--pixel-border);
+    }
+
+    .btn-cancel:hover {
+      background: var(--pixel-surface);
+    }
+
+    .btn-spawn {
+      color: var(--pixel-green);
+      background: var(--pixel-surface);
+      border-color: var(--pixel-green);
+      font-weight: bold;
+    }
+
+    .btn-spawn:hover {
+      background: #2a3a2e;
+    }
+
+    .btn-spawn-no-prompt {
+      color: var(--pixel-accent);
+      background: var(--pixel-surface);
+      border-color: var(--pixel-accent);
+    }
+
+    .btn-spawn-no-prompt:hover {
+      background: #252a3e;
+    }
+
+    .canvas-wrapper {
+      border: 2px solid var(--pixel-border);
+      border-radius: 0;
+      overflow: hidden;
+      box-shadow: 4px 4px 0px #0a0a14;
+      image-rendering: pixelated;
+    }
+
+    #office-canvas {
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      cursor: pointer;
+      width: 576px;
+      height: 480px;
+    }
+
+    .footer {
+      display: flex;
+      gap: 16px;
+      padding: 8px 16px;
+      font-size: 10px;
+      color: var(--pixel-dim);
+    }
+
+    .footer span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 0;
+      background: var(--pixel-green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Pixel Agents</h1>
+    <span class="agent-count" id="agent-count">0 agents</span>
+    <button class="add-agent-btn" id="add-agent-btn">+ AGENT</button>
+  </div>
+
+  <div class="prompt-overlay" id="prompt-overlay">
+    <div class="prompt-box">
+      <h2>Spawn New Agent</h2>
+      <p>Opens a new terminal with Claude Code in autonomous mode.
+         Optionally give it a task to start working on immediately.</p>
+      <textarea id="agent-prompt" placeholder="e.g. Fix the failing tests in src/api/users.test.ts"></textarea>
+      <div class="prompt-actions">
+        <button class="btn-cancel" id="btn-cancel">Cancel</button>
+        <button class="btn-spawn-no-prompt" id="btn-spawn-empty">Just Launch</button>
+        <button class="btn-spawn" id="btn-spawn">Launch with Task</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="canvas-wrapper">
+    <canvas id="office-canvas" width="576" height="480"></canvas>
+  </div>
+
+  <div class="footer">
+    <span><div class="status-dot"></div> Monitoring Claude Code</span>
+    <span>Click agent to inspect</span>
+  </div>
+
+  <!-- SCRIPTS_PLACEHOLDER -->
+</body>
+</html>

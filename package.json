@@ -1,0 +1,72 @@
+{
+  "name": "pixel-agents",
+  "displayName": "Pixel Agents",
+  "description": "Visualize Claude Code agents as pixel art characters in a virtual office",
+  "version": "0.1.0",
+  "publisher": "connectshadman",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "ai-agents",
+    "pixel-art",
+    "visualization",
+    "developer-tools"
+  ],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "pixelAgents.openOffice",
+        "title": "Pixel Agents: Open Office"
+      },
+      {
+        "command": "pixelAgents.toggleSound",
+        "title": "Pixel Agents: Toggle Sound"
+      }
+    ],
+    "configuration": {
+      "title": "Pixel Agents",
+      "properties": {
+        "pixelAgents.soundEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Play sound when an agent completes work"
+        },
+        "pixelAgents.transcriptPath": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to Claude Code transcripts (leave empty for auto-detect)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "node scripts/generate-sprite-data.js && tsc -p ./ && node scripts/bundle-webview.js",
+    "watch": "tsc -watch -p ./",
+    "bundle-webview": "node scripts/bundle-webview.js",
+    "package": "npm run compile && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.22.0",
+    "esbuild": "^0.27.3",
+    "typescript": "^5.3.0"
+  }
+}
