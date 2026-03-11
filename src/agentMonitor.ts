@@ -38,39 +38,31 @@ const STALE_AGENT_TIMEOUT_MS = 120_000; // 2 minutes
 /** Poll interval for scanning sessions */
 const POLL_INTERVAL_MS = 2_000;
 
-/** Fun auto-generated names for agents */
-const AGENT_ADJECTIVES = [
-  'Swift', 'Clever', 'Bold', 'Keen', 'Nimble', 'Sharp', 'Brave', 'Witty',
-  'Sage', 'Deft', 'Sly', 'Calm', 'Bright', 'Quick', 'Steady', 'Fierce',
-  'Cool', 'Lucky', 'Mighty', 'Zen', 'Cosmic', 'Epic', 'Turbo', 'Pixel',
-  'Hyper', 'Ultra', 'Mega', 'Super', 'Quantum', 'Cyber', 'Nova', 'Neon',
-];
-
-const AGENT_NOUNS = [
-  'Fox', 'Owl', 'Wolf', 'Hawk', 'Bear', 'Lynx', 'Raven', 'Panda',
-  'Otter', 'Falcon', 'Badger', 'Crane', 'Tiger', 'Eagle', 'Bison', 'Cobra',
-  'Spark', 'Blaze', 'Storm', 'Frost', 'Drift', 'Forge', 'Pulse', 'Byte',
-  'Glitch', 'Flux', 'Comet', 'Prism', 'Cipher', 'Vector', 'Atlas', 'Orbit',
+/** Human-sounding names for agents */
+const AGENT_NAMES = [
+  'Ada', 'Kai', 'Mika', 'Ravi', 'Zara', 'Luca', 'Noor', 'Enzo',
+  'Suki', 'Omar', 'Yuki', 'Dani', 'Ines', 'Theo', 'Mira', 'Remy',
+  'Aria', 'Hugo', 'Luna', 'Jude', 'Iris', 'Axel', 'Cleo', 'Finn',
+  'Rosa', 'Elio', 'Maya', 'Nico', 'Tara', 'Alec', 'Sage', 'Cruz',
+  'Lyra', 'Dean', 'Kira', 'Noah', 'Vera', 'Cole', 'Jade', 'Rune',
+  'Niko', 'Sven', 'Zoe', 'Teo', 'Ivy', 'Leo', 'Nova', 'Kit',
 ];
 
 /** Track used names to avoid duplicates in the same session */
 const usedNames = new Set<string>();
 
 function generateAgentName(): string {
-  // Try to find an unused combination
+  // Try to find an unused name
   for (let attempt = 0; attempt < 50; attempt++) {
-    const adj = AGENT_ADJECTIVES[Math.floor(Math.random() * AGENT_ADJECTIVES.length)];
-    const noun = AGENT_NOUNS[Math.floor(Math.random() * AGENT_NOUNS.length)];
-    const name = `${adj} ${noun}`;
+    const name = AGENT_NAMES[Math.floor(Math.random() * AGENT_NAMES.length)];
     if (!usedNames.has(name)) {
       usedNames.add(name);
       return name;
     }
   }
-  // Fallback: add a number
-  const adj = AGENT_ADJECTIVES[Math.floor(Math.random() * AGENT_ADJECTIVES.length)];
-  const noun = AGENT_NOUNS[Math.floor(Math.random() * AGENT_NOUNS.length)];
-  return `${adj} ${noun} ${usedNames.size + 1}`;
+  // Fallback: add a number suffix
+  const name = AGENT_NAMES[Math.floor(Math.random() * AGENT_NAMES.length)];
+  return `${name} ${usedNames.size + 1}`;
 }
 
 export class AgentMonitor {
@@ -80,12 +72,17 @@ export class AgentMonitor {
   private pollInterval: NodeJS.Timeout | null = null;
   private disposed = false;
   private agentCounter = 0;
+  /** Only detect sessions created after the monitor starts */
+  private monitorStartTime = 0;
 
   constructor(onChange: AgentChangeCallback) {
     this.onChange = onChange;
   }
 
   start(): void {
+    // Record start time: only sessions created AFTER this are shown
+    this.monitorStartTime = Date.now();
+
     const projectDirs = this.getProjectDirs();
     if (projectDirs.length === 0) {
       console.log('Agent Arcade: No Claude Code project directories found');
@@ -93,11 +90,6 @@ export class AgentMonitor {
     }
 
     console.log(`Agent Arcade: Watching ${projectDirs.length} project dir(s)`);
-
-    // Initial scan
-    for (const dir of projectDirs) {
-      this.scanSessions(dir);
-    }
 
     // Poll for changes
     this.pollInterval = setInterval(() => {
@@ -196,11 +188,12 @@ export class AgentMonitor {
         const sessionId = path.basename(sessionFile, '.jsonl');
         if (this.agents.has(sessionId)) continue;
 
-        // Only add sessions that are actively being written to
+        // Only add sessions CREATED after the monitor started and actively written to
         try {
           const stat = fs.statSync(sessionFile);
-          const age = Date.now() - stat.mtimeMs;
-          if (age < ACTIVE_SESSION_AGE_MS) {
+          const createdAfterStart = stat.birthtimeMs >= this.monitorStartTime;
+          const recentlyModified = (Date.now() - stat.mtimeMs) < ACTIVE_SESSION_AGE_MS;
+          if (createdAfterStart && recentlyModified) {
             this.addAgent(sessionId, sessionFile);
           }
         } catch {
