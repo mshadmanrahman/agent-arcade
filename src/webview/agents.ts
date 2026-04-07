@@ -6,7 +6,8 @@
  */
 
 import { findPath, getDirection } from './pathfinding';
-import { getDeskPositions, getTileSize, GRID_COLS } from './office';
+import { getTileSize, GRID_COLS } from './office';
+import { getDeskChairPairs } from './furniture';
 
 export type AgentState =
   | 'idle' | 'walking' | 'typing' | 'reading' | 'thinking'
@@ -49,8 +50,9 @@ export interface Agent {
 }
 
 const ANIM_SPEED = 8;
-const WALK_PX_PER_FRAME = 2;
-const DOOR_TILE = { x: 11, y: 8 };
+const WALK_PX_PER_FRAME = 16;
+/** Spawn point: center of the hallway connecting both rooms */
+const DOOR_TILE = { x: 10, y: 10 };
 const WAVE_DURATION = 60;      // ~2 seconds at 30fps
 const SPAWNING_DURATION = 45;  // ~1.5 seconds
 const FADE_DURATION = 30;      // ~1 second
@@ -61,7 +63,7 @@ let deskAssignments: Map<string, number> = new Map();
 let parentChildMap: Map<string, string> = new Map(); // childId -> parentId
 
 function getNextDeskIndex(): number {
-  const desks = getDeskPositions();
+  const desks = getDeskChairPairs();
   const used = new Set(deskAssignments.values());
   for (let i = 0; i < desks.length; i++) {
     if (!used.has(i)) return i;
@@ -81,7 +83,7 @@ export function createAgent(
 ): Agent {
   const deskIndex = getNextDeskIndex();
   deskAssignments.set(id, deskIndex);
-  const desks = getDeskPositions();
+  const desks = getDeskChairPairs();
   const desk = desks[deskIndex % desks.length];
   const tileSize = getTileSize();
 

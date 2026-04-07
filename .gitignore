@@ -17,3 +17,9 @@ Thumbs.db
 
 # Generated build artifacts
 src/webview/spriteAssets.ts
+
+# Local AI config
+.claude/
+
+# Asset packs (large binary files)
+Modern_Office_Revamped_v1.2/

@@ -4,271 +4,647 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
     :root {
-      --pixel-bg: #1e1e2e;
-      --pixel-surface: #252538;
-      --pixel-border: #3a3a52;
-      --pixel-accent: #5a8cff;
-      --pixel-green: #5ac88c;
-      --pixel-text: #cdd6f4;
-      --pixel-dim: #6c7086;
-      --pixel-shadow: 2px 2px 0px #0a0a14;
+      --bg: #0d1117;
+      --surface: rgba(13, 17, 23, 0.95);
+      --surface-light: rgba(22, 27, 34, 0.95);
+      --border: rgba(48, 54, 61, 0.8);
+      --border-bright: rgba(90, 140, 255, 0.4);
+      --accent: #5a8cff;
+      --green: #4ade80;
+      --yellow: #facc15;
+      --red: #f87171;
+      --blue: #60a5fa;
+      --purple: #c084fc;
+      --text: #e6edf3;
+      --dim: #7d8590;
+      --game-font: 'Press Start 2P', 'Courier New', monospace;
+
+      /* Pixel bar colors */
+      --hp-color: #ef4444;
+      --hp-bg: #450a0a;
+      --mp-color: #3b82f6;
+      --mp-bg: #172554;
+      --xp-color: #a855f7;
+      --xp-bg: #2e1065;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      background: var(--pixel-bg);
+      background: var(--bg);
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: var(--game-font);
+      color: var(--text);
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      font-family: 'Courier New', monospace;
-      color: var(--pixel-text);
-      overflow: hidden;
     }
 
-    .header {
+    /* ── Top Bar ─────────────────────────────── */
+    .top-bar {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      width: 100%;
-      max-width: 600px;
-    }
-
-    .header h1 {
-      font-size: 14px;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: var(--pixel-accent);
-      text-shadow: var(--pixel-shadow);
-    }
-
-    .agent-count {
-      font-size: 11px;
-      color: var(--pixel-dim);
-      background: var(--pixel-surface);
-      border: 2px solid var(--pixel-border);
-      padding: 2px 8px;
-      border-radius: 0;
-    }
-
-    .add-agent-btn {
-      margin-left: auto;
-      font-family: 'Courier New', monospace;
-      font-size: 11px;
-      font-weight: bold;
-      color: var(--pixel-green);
-      background: var(--pixel-surface);
-      border: 2px solid var(--pixel-green);
-      padding: 4px 12px;
-      border-radius: 0;
-      cursor: pointer;
-      letter-spacing: 1px;
-      box-shadow: var(--pixel-shadow);
-      transition: background 0.1s;
-    }
-
-    .add-agent-btn:hover {
-      background: #2a3a2e;
-    }
-
-    .add-agent-btn:active {
-      box-shadow: none;
-      transform: translate(2px, 2px);
-    }
-
-    .prompt-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(10, 10, 20, 0.88);
-      z-index: 100;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .prompt-overlay.visible {
-      display: flex;
-    }
-
-    .prompt-box {
-      background: var(--pixel-bg);
-      border: 2px solid var(--pixel-accent);
-      border-radius: 0;
-      padding: 20px;
-      width: 400px;
-      max-width: 90%;
-      box-shadow: 4px 4px 0px #0a0a14;
-    }
-
-    .prompt-box h2 {
-      font-size: 13px;
-      color: var(--pixel-accent);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-      text-shadow: var(--pixel-shadow);
-    }
-
-    .prompt-box p {
-      font-size: 11px;
-      color: var(--pixel-dim);
-      margin-bottom: 12px;
-      line-height: 1.5;
-    }
-
-    .prompt-box textarea {
-      width: 100%;
-      min-height: 80px;
-      background: var(--pixel-surface);
-      border: 2px solid var(--pixel-border);
-      border-radius: 0;
-      color: var(--pixel-text);
-      font-family: 'Courier New', monospace;
-      font-size: 12px;
-      padding: 10px;
-      resize: vertical;
-      outline: none;
-    }
-
-    .prompt-box textarea:focus {
-      border-color: var(--pixel-accent);
-    }
-
-    .prompt-box textarea::placeholder {
-      color: #45455a;
-    }
-
-    .prompt-actions {
-      display: flex;
       gap: 8px;
-      margin-top: 12px;
-      justify-content: flex-end;
+      padding: 6px 10px;
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      flex-shrink: 0;
+      min-height: 38px;
     }
 
-    .prompt-actions button {
-      font-family: 'Courier New', monospace;
-      font-size: 11px;
-      padding: 6px 16px;
-      border-radius: 0;
-      cursor: pointer;
-      border: 2px solid;
-      box-shadow: var(--pixel-shadow);
-      transition: background 0.1s;
-    }
-
-    .prompt-actions button:active {
-      box-shadow: none;
-      transform: translate(2px, 2px);
-    }
-
-    .btn-cancel {
-      color: var(--pixel-dim);
-      background: transparent;
-      border-color: var(--pixel-border);
-    }
-
-    .btn-cancel:hover {
-      background: var(--pixel-surface);
-    }
-
-    .btn-spawn {
-      color: var(--pixel-green);
-      background: var(--pixel-surface);
-      border-color: var(--pixel-green);
-      font-weight: bold;
-    }
-
-    .btn-spawn:hover {
-      background: #2a3a2e;
-    }
-
-    .btn-spawn-no-prompt {
-      color: var(--pixel-accent);
-      background: var(--pixel-surface);
-      border-color: var(--pixel-accent);
-    }
-
-    .btn-spawn-no-prompt:hover {
-      background: #252a3e;
-    }
-
-    .canvas-wrapper {
-      border: 2px solid var(--pixel-border);
-      border-radius: 0;
-      overflow: hidden;
-      box-shadow: 4px 4px 0px #0a0a14;
-      image-rendering: pixelated;
-    }
-
-    #office-canvas {
-      display: block;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      cursor: pointer;
-      width: 576px;
-      height: 480px;
-    }
-
-    .footer {
-      display: flex;
-      gap: 16px;
-      padding: 8px 16px;
+    .top-title {
       font-size: 10px;
-      color: var(--pixel-dim);
+      letter-spacing: 1px;
+      color: var(--accent);
+      text-shadow: 0 0 8px rgba(90,140,255,0.3);
+      white-space: nowrap;
+      margin-right: 4px;
     }
 
-    .footer span {
+    .top-badge {
+      font-size: 7px;
+      color: var(--green);
+      background: rgba(74,222,128,0.1);
+      border: 1px solid rgba(74,222,128,0.3);
+      padding: 2px 6px;
+      margin-right: 8px;
+      white-space: nowrap;
+    }
+
+    .top-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+      margin: 0 4px;
+    }
+
+    /* Agent tabs in top bar */
+    .agent-tabs {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .agent-tabs::-webkit-scrollbar { display: none; }
+
+    .agent-tab {
       display: flex;
       align-items: center;
       gap: 4px;
+      font-family: var(--game-font);
+      font-size: 7px;
+      color: var(--dim);
+      background: transparent;
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+
+    .agent-tab:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .agent-tab.selected {
+      border-color: var(--accent);
+      background: rgba(90,140,255,0.1);
+      color: var(--accent);
+    }
+
+    .tab-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .tab-name { font-weight: bold; }
+    .tab-state { color: var(--dim); font-size: 6px; }
+
+    .agent-tab-empty {
+      font-size: 7px;
+      color: var(--dim);
+      padding: 4px 0;
+    }
+
+    /* ── Main Area ───────────────────────────── */
+    .main-area {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Canvas (2D pixel office) ────────────── */
+    .canvas-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+      background: #0a0a0f;
+    }
+
+    #office-canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      cursor: crosshair;
+      /* Scale to fill container while maintaining aspect ratio */
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    /* ── HUD Overlay ─────────────────────────── */
+    .hud {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .hud > * { pointer-events: auto; }
+
+    /* Zoom controls (bottom-left) */
+    .hud-zoom {
+      position: absolute;
+      bottom: 52px;
+      left: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .hud-btn {
+      font-family: var(--game-font);
+      font-size: 12px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.15s;
+      line-height: 1;
+    }
+
+    .hud-btn:hover { background: rgba(90,140,255,0.2); border-color: var(--accent); }
+
+    .hud-zoom-label {
+      font-family: var(--game-font);
+      font-size: 7px;
+      color: var(--dim);
+      text-align: center;
+      padding: 1px 0;
+    }
+
+    /* Status (bottom-left) */
+    .hud-status {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 6px;
+      color: var(--dim);
     }
 
     .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 0;
-      background: var(--pixel-green);
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--green);
       animation: pulse 2s infinite;
+      box-shadow: 0 0 4px var(--green);
     }
 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.3; }
     }
+
+    /* Bottom toolbar */
+    .hud-bottom {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 4px;
+    }
+
+    .hud-action {
+      font-family: var(--game-font);
+      font-size: 8px;
+      color: var(--text);
+      background: transparent;
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .hud-action:hover { background: rgba(90,140,255,0.15); border-color: var(--accent); color: var(--accent); }
+    .hud-action.primary { color: var(--green); border-color: rgba(74,222,128,0.3); }
+    .hud-action.primary:hover { background: rgba(74,222,128,0.15); border-color: var(--green); }
+
+    /* ── Hover Tooltip ───────────────────────── */
+    .hover-tooltip {
+      display: none;
+      position: fixed;
+      z-index: 50;
+      background: var(--surface);
+      border: 2px solid var(--border-bright);
+      padding: 8px 10px;
+      min-width: 180px;
+      max-width: 240px;
+      pointer-events: none;
+      box-shadow: 0 0 12px rgba(90,140,255,0.15);
+    }
+
+    .hover-tooltip.visible { display: block; }
+
+    .tt-header {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 5px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tt-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .tt-name { font-size: 8px; color: var(--accent); }
+    .tt-model { font-size: 6px; color: var(--dim); margin-left: auto; }
+
+    .tt-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 7px;
+      padding: 1px 0;
+      color: var(--dim);
+    }
+
+    .tt-row span:last-child { color: var(--text); }
+
+    .tt-task {
+      font-size: 7px;
+      color: var(--green);
+      margin-top: 4px;
+      padding: 3px 4px;
+      background: rgba(74,222,128,0.08);
+      border: 1px solid rgba(74,222,128,0.2);
+      line-height: 1.4;
+      max-height: 40px;
+      overflow: hidden;
+    }
+
+    .tt-hint {
+      font-size: 6px;
+      color: var(--dim);
+      text-align: center;
+      margin-top: 4px;
+      opacity: 0.6;
+    }
+
+    /* ── Agent Dossier Panel (RPG Character Sheet) ─── */
+    .agent-panel {
+      display: none;
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 280px;
+      background: var(--surface);
+      border: 2px solid var(--border-bright);
+      overflow: hidden;
+      z-index: 20;
+      box-shadow: 0 0 20px rgba(90,140,255,0.1), inset 0 0 30px rgba(0,0,0,0.3);
+    }
+
+    .agent-panel.visible { display: block; }
+
+    /* Dossier inner structure */
+    .dossier { padding: 0; }
+
+    .dossier-header {
+      padding: 8px 10px;
+      border-bottom: 2px solid var(--border);
+      background: rgba(90,140,255,0.05);
+    }
+
+    .dossier-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .dossier-name {
+      font-size: 11px;
+      color: var(--accent);
+      text-shadow: 0 0 8px rgba(90,140,255,0.4);
+      letter-spacing: 1px;
+    }
+
+    .dossier-close {
+      font-size: 14px;
+      color: var(--dim);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0 4px;
+      font-family: var(--game-font);
+    }
+
+    .dossier-close:hover { color: var(--red); }
+
+    .dossier-subtitle {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 4px;
+      font-size: 7px;
+      color: var(--dim);
+    }
+
+    .dossier-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .dossier-sep { color: var(--border); }
+
+    /* HP/MP/XP Bars */
+    .dossier-bars {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .bar-row:last-child { margin-bottom: 0; }
+
+    .bar-label {
+      font-size: 7px;
+      width: 18px;
+      color: var(--dim);
+      flex-shrink: 0;
+    }
+
+    .bar-track {
+      flex: 1;
+      height: 8px;
+      background: var(--hp-bg);
+      position: relative;
+      overflow: hidden;
+      /* Pixel-art stepped look */
+      image-rendering: pixelated;
+    }
+
+    .bar-fill {
+      height: 100%;
+      transition: width 0.5s ease;
+    }
+
+    .bar-hp .bar-track { background: var(--hp-bg); }
+    .bar-hp { background: var(--hp-color); }
+    .bar-mp .bar-track { background: var(--mp-bg); }
+    .bar-mp { background: var(--mp-color); }
+    .bar-xp .bar-track { background: var(--xp-bg); }
+    .bar-xp { background: var(--xp-color); }
+
+    .bar-value {
+      font-size: 6px;
+      color: var(--dim);
+      width: 52px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* Dossier sections */
+    .dossier-section {
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dossier-section-title {
+      font-size: 7px;
+      color: var(--yellow);
+      margin-bottom: 4px;
+      letter-spacing: 1px;
+    }
+
+    .dossier-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px 8px;
+    }
+
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 7px;
+      padding: 1px 0;
+    }
+
+    .stat-key { color: var(--dim); }
+    .stat-val { color: var(--text); }
+
+    .dossier-quest {
+      font-size: 7px;
+      color: var(--green);
+      background: rgba(74,222,128,0.05);
+      border: 1px solid rgba(74,222,128,0.15);
+      padding: 5px 6px;
+      line-height: 1.6;
+      max-height: 50px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+    }
+
+    .dossier-sparkline {
+      height: 24px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      gap: 1px;
+      padding: 2px;
+    }
+
+    .dossier-actions {
+      padding: 6px 10px;
+    }
+
+    .btn-end-agent {
+      width: 100%;
+      font-family: var(--game-font);
+      font-size: 7px;
+      color: var(--red);
+      background: rgba(248,113,113,0.05);
+      border: 1px solid rgba(248,113,113,0.3);
+      padding: 6px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 1px;
+    }
+
+    .btn-end-agent:hover { background: rgba(248,113,113,0.15); border-color: var(--red); }
+
+    /* ── Spawn Modal ──────────────────────────── */
+    .prompt-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .prompt-overlay.visible { display: flex; }
+
+    .prompt-box {
+      background: var(--surface);
+      border: 2px solid var(--border-bright);
+      padding: 16px;
+      width: 380px;
+      max-width: 90%;
+    }
+
+    .prompt-box h2 {
+      font-family: var(--game-font);
+      font-size: 9px;
+      color: var(--accent);
+      margin-bottom: 8px;
+      text-shadow: 0 0 8px rgba(90,140,255,0.3);
+    }
+
+    .prompt-box p {
+      font-size: 10px;
+      font-family: -apple-system, sans-serif;
+      color: var(--dim);
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .prompt-box textarea {
+      width: 100%;
+      min-height: 60px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      padding: 8px;
+      resize: vertical;
+      outline: none;
+    }
+
+    .prompt-box textarea:focus { border-color: var(--accent); }
+    .prompt-box textarea::placeholder { color: #40404a; }
+
+    .prompt-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+      justify-content: flex-end;
+    }
+
+    .prompt-actions button {
+      font-family: var(--game-font);
+      font-size: 7px;
+      padding: 6px 12px;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 0.15s;
+    }
+
+    .btn-cancel { color: var(--dim); background: transparent; border-color: var(--border); }
+    .btn-cancel:hover { background: rgba(255,255,255,0.05); }
+    .btn-spawn { color: var(--green); background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.3); }
+    .btn-spawn:hover { background: rgba(74,222,128,0.18); border-color: var(--green); }
+    .btn-spawn-no-prompt { color: var(--accent); background: transparent; border-color: rgba(90,140,255,0.3); }
+    .btn-spawn-no-prompt:hover { background: rgba(90,140,255,0.08); }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>Agent Arcade</h1>
-    <span class="agent-count" id="agent-count">0 agents</span>
-    <button class="add-agent-btn" id="add-agent-btn">+ AGENT</button>
-  </div>
-
-  <div class="prompt-overlay" id="prompt-overlay">
-    <div class="prompt-box">
-      <h2>Spawn New Agent</h2>
-      <p>Opens a new terminal with Claude Code in autonomous mode.
-         Optionally give it a task to start working on immediately.</p>
-      <textarea id="agent-prompt" placeholder="e.g. Fix the failing tests in src/api/users.test.ts"></textarea>
-      <div class="prompt-actions">
-        <button class="btn-cancel" id="btn-cancel">Cancel</button>
-        <button class="btn-spawn-no-prompt" id="btn-spawn-empty">Just Launch</button>
-        <button class="btn-spawn" id="btn-spawn">Launch with Task</button>
-      </div>
+  <!-- Top status bar with agent tabs -->
+  <div class="top-bar">
+    <span class="top-title">AGENT ARCADE</span>
+    <span class="top-badge" id="agent-count">0 agents</span>
+    <div class="top-divider"></div>
+    <div class="agent-tabs" id="agent-tabs">
+      <span class="agent-tab-empty">No agents in office</span>
     </div>
   </div>
 
-  <div class="canvas-wrapper">
-    <canvas id="office-canvas" width="576" height="480"></canvas>
+  <!-- Main area: canvas + overlays -->
+  <div class="main-area">
+    <!-- 2D pixel office canvas -->
+    <div class="canvas-wrapper" id="canvas-wrapper">
+      <canvas id="office-canvas"></canvas>
+    </div>
+
+    <!-- HUD overlay on top of canvas -->
+    <div class="hud">
+      <!-- Zoom controls -->
+      <div class="hud-zoom">
+        <button class="hud-btn" id="zoom-in">+</button>
+        <span class="hud-zoom-label" id="zoom-label">100%</span>
+        <button class="hud-btn" id="zoom-out">&minus;</button>
+      </div>
+
+      <!-- Status indicator -->
+      <div class="hud-status">
+        <div class="status-dot"></div>
+        <span>Monitoring Claude Code</span>
+      </div>
+
+      <!-- Bottom toolbar -->
+      <div class="hud-bottom">
+        <button class="hud-action primary" id="add-agent-btn">+ AGENT</button>
+        <button class="hud-action" style="opacity:0.4;cursor:default" title="Coming soon">LAYOUT</button>
+        <button class="hud-action" style="opacity:0.4;cursor:default" title="Coming soon">CONFIG</button>
+      </div>
+
+      <!-- Agent dossier panel (RPG character sheet) -->
+      <div class="agent-panel" id="agent-panel"></div>
+    </div>
+
+    <!-- Hover tooltip (follows cursor) -->
+    <div class="hover-tooltip" id="hover-tooltip"></div>
   </div>
 
-  <div class="footer">
-    <span><div class="status-dot"></div> Monitoring Claude Code</span>
-    <span>Click agent to inspect</span>
+  <!-- Spawn Modal -->
+  <div class="prompt-overlay" id="prompt-overlay">
+    <div class="prompt-box">
+      <h2>SPAWN AGENT</h2>
+      <p>Opens a new Claude Code terminal. Give it a task or just launch.</p>
+      <textarea id="agent-prompt" placeholder="e.g. Fix the failing tests in src/api/users.test.ts"></textarea>
+      <div class="prompt-actions">
+        <button class="btn-cancel" id="btn-cancel">CANCEL</button>
+        <button class="btn-spawn-no-prompt" id="btn-spawn-empty">JUST LAUNCH</button>
+        <button class="btn-spawn" id="btn-spawn">LAUNCH</button>
+      </div>
+    </div>
   </div>
 
   <!-- SCRIPTS_PLACEHOLDER -->

@@ -319,8 +319,29 @@ export class AgentMonitor {
       const content = fs.readFileSync(filePath, 'utf-8');
       const lines = content.trim().split('\n');
 
-      // Parse from the end to find latest state
-      for (let i = lines.length - 1; i >= Math.max(0, lines.length - 20); i--) {
+      // First pass: scan early lines for user prompt and model info
+      const scanLimit = Math.min(lines.length, 30);
+      for (let i = 0; i < scanLimit; i++) {
+        try {
+          const entry = JSON.parse(lines[i]);
+          // Capture model from any entry that has it
+          if (entry.model && typeof entry.model === 'string' && agent.model === 'unknown') {
+            agent.model = entry.model;
+          }
+          // Capture user prompt as task summary (first user message)
+          if (!agent.lastMessage || agent.lastMessage === '') {
+            const userText = this.extractUserMessage(entry);
+            if (userText) {
+              agent.lastMessage = userText.slice(0, 80);
+            }
+          }
+        } catch {
+          // Skip malformed lines
+        }
+      }
+
+      // Second pass: scan recent lines for current activity
+      for (let i = lines.length - 1; i >= Math.max(0, lines.length - 40); i--) {
         try {
           const entry = JSON.parse(lines[i]);
           this.updateAgentFromEntry(agent, entry);
@@ -336,42 +357,110 @@ export class AgentMonitor {
     }
   }
 
+  /** Extract user message text from various transcript entry formats */
+  private extractUserMessage(entry: Record<string, unknown>): string | null {
+    const type = entry.type as string | undefined;
+    const role = entry.role as string | undefined;
+
+    // Format: { type: "human", message: { content: "..." } }
+    if (type === 'human' || type === 'user' || role === 'human' || role === 'user') {
+      const message = entry.message as Record<string, unknown> | string | undefined;
+      if (typeof message === 'string') return message;
+      if (message && typeof message === 'object') {
+        const content = message.content;
+        if (typeof content === 'string') return content;
+        if (Array.isArray(content)) {
+          // Content blocks: [{ type: "text", text: "..." }]
+          for (const block of content) {
+            if (block && typeof block === 'object' && (block as Record<string, unknown>).type === 'text') {
+              const text = (block as Record<string, unknown>).text;
+              if (typeof text === 'string') return text;
+            }
+          }
+        }
+      }
+      // Direct content field
+      const content = entry.content;
+      if (typeof content === 'string') return content;
+      if (Array.isArray(content)) {
+        for (const block of content) {
+          if (block && typeof block === 'object' && (block as Record<string, unknown>).type === 'text') {
+            const text = (block as Record<string, unknown>).text;
+            if (typeof text === 'string') return text;
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
   private updateAgentFromEntry(agent: DetectedAgent, entry: Record<string, unknown>): void {
-    // Detect model
+    // Detect model from any entry
     if (entry.model && typeof entry.model === 'string') {
       agent.model = entry.model;
     }
 
     // Detect activity from tool use
     const type = entry.type as string | undefined;
+    const role = entry.role as string | undefined;
     const tool = entry.tool as string | undefined;
 
-    if (type === 'tool_use' || type === 'tool_call') {
-      if (tool === 'Write' || tool === 'Edit' || tool === 'NotebookEdit') {
+    // Handle various transcript formats
+    // Format 1: { type: "tool_use", tool: "Read" }
+    // Format 2: { role: "assistant", content: [{ type: "tool_use", name: "Read" }] }
+    let detectedTool = tool;
+    if (!detectedTool && role === 'assistant' && Array.isArray(entry.content)) {
+      for (const block of entry.content as Record<string, unknown>[]) {
+        if (block.type === 'tool_use' || block.type === 'tool_call') {
+          detectedTool = (block.name || block.tool) as string;
+          break;
+        }
+      }
+    }
+
+    if (type === 'tool_use' || type === 'tool_call' || detectedTool) {
+      const t = detectedTool || tool || '';
+      if (t === 'Write' || t === 'Edit' || t === 'NotebookEdit') {
         agent.activity = 'typing';
-        agent.lastMessage = `Writing: ${tool}`;
-      } else if (tool === 'Read' || tool === 'Grep' || tool === 'Glob' || tool === 'Search') {
+        agent.lastMessage = `Writing: ${t}`;
+      } else if (t === 'Read' || t === 'Grep' || t === 'Glob' || t === 'Search' || t === 'LS') {
         agent.activity = 'reading';
-        agent.lastMessage = `Reading: ${tool}`;
-      } else if (tool === 'Bash') {
+        agent.lastMessage = `Reading: ${t}`;
+      } else if (t === 'Bash' || t === 'BashOutput') {
         agent.activity = 'typing';
         agent.lastMessage = 'Running command';
-      } else if (tool === 'Agent' || tool === 'Task') {
+      } else if (t === 'WebSearch' || t === 'WebFetch') {
+        agent.activity = 'reading';
+        agent.lastMessage = `Researching: ${t}`;
+      } else if (t === 'Agent' || t === 'Task') {
         agent.activity = 'thinking';
         const input = entry.input as Record<string, unknown> | undefined;
         const desc = input?.description as string | undefined;
         agent.lastMessage = desc
-          ? `Spawning: ${desc.slice(0, 40)}`
+          ? `Spawning: ${desc.slice(0, 50)}`
           : 'Spawning sub-agent';
-      } else {
+      } else if (t) {
         agent.activity = 'thinking';
-        agent.lastMessage = `Using ${tool}`;
+        agent.lastMessage = `Using ${t}`;
       }
-    } else if (type === 'assistant' || type === 'response') {
+    } else if (type === 'assistant' || type === 'response' || role === 'assistant') {
       agent.activity = 'thinking';
-      const msg = entry.message || entry.content;
-      if (typeof msg === 'string') {
-        agent.lastMessage = msg.slice(0, 60);
+      // Try to get a text summary
+      const content = entry.content;
+      if (typeof content === 'string') {
+        agent.lastMessage = content.slice(0, 80);
+      } else if (Array.isArray(content)) {
+        for (const block of content as Record<string, unknown>[]) {
+          if (block.type === 'text' && typeof block.text === 'string') {
+            agent.lastMessage = (block.text as string).slice(0, 80);
+            break;
+          }
+        }
+      }
+      const msg = entry.message;
+      if (typeof msg === 'string' && !agent.lastMessage) {
+        agent.lastMessage = msg.slice(0, 80);
       }
     } else if (type === 'result' || type === 'completion') {
       agent.activity = 'done';
@@ -379,7 +468,7 @@ export class AgentMonitor {
     } else if (type === 'error') {
       agent.activity = 'error';
       const msg = entry.message || entry.error;
-      agent.lastMessage = typeof msg === 'string' ? msg.slice(0, 60) : 'Error';
+      agent.lastMessage = typeof msg === 'string' ? msg.slice(0, 80) : 'Error';
     }
   }
 

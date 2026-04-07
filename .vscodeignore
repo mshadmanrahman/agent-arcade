@@ -10,3 +10,5 @@ tsconfig.json
 CONTRIBUTING.md
 CHANGELOG.md
 .git/**
+.claude/**
+Modern_Office_Revamped_v1.2/**

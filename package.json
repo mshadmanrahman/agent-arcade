@@ -1,10 +1,11 @@
 {
   "name": "agent-arcade",
   "displayName": "Agent Arcade",
-  "description": "Visualize Claude Code agents as pixel art characters in a virtual office",
+  "description": "Visualize your Claude Code agents in a 3D isometric office",
   "version": "0.1.0",
   "publisher": "connectshadman",
   "license": "MIT",
+  "icon": "icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/mshadmanrahman/agent-arcade"
@@ -57,7 +58,7 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "node scripts/generate-sprite-data.js && tsc -p ./ && node scripts/bundle-webview.js",
+    "compile": "node scripts/generate-sprite-data.js && node scripts/generate-tile-data.js && tsc -p ./ && node scripts/bundle-webview.js",
     "watch": "tsc -watch -p ./",
     "bundle-webview": "node scripts/bundle-webview.js",
     "package": "npm run compile && vsce package --no-dependencies"

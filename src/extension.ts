@@ -86,6 +86,17 @@ const previousAgents = new Map<string, DetectedAgent>();
 const agentVariants = new Map<string, number>(); // Persist variant assignment per agent ID
 let variantCounter = 0;
 
+/**
+ * Bridge between spawned agents (from + Agent button) and monitor-detected sessions.
+ * Maps: monitor session ID -> spawned agent ID.
+ * When the monitor finds a new session, we check if a recently spawned terminal
+ * exists that hasn't been linked yet. If so, we link them so updates flow to
+ * the spawned agent instead of creating a duplicate character.
+ */
+const monitorToSpawnedMap = new Map<string, string>();
+const spawnedAgentTimestamps = new Map<string, number>(); // agentId -> spawn time
+const SPAWN_LINK_WINDOW_MS = 30_000; // 30 seconds to link a spawned agent
+
 function getVariantForAgent(id: string): number {
   const existing = agentVariants.get(id);
   if (existing !== undefined) return existing;
@@ -101,31 +112,53 @@ function handleAgentChanges(agents: Map<string, DetectedAgent>): void {
   // Detect new agents
   agents.forEach((agent, id) => {
     if (!previousAgents.has(id)) {
-      const variant = getVariantForAgent(id);
+      // Check if this monitor-detected session should be linked to a spawned agent
+      const linkedSpawnId = tryLinkToSpawnedAgent(id);
 
-      if (panel) {
-        panel.postMessage({
-          type: 'agentAdd',
-          payload: {
-            id: agent.id,
-            name: agent.name,
-            variant,
-            model: agent.model,
-            branch: agent.branch,
-            taskSummary: agent.lastMessage || 'Starting...',
-            parentId: agent.parentId || undefined,
-          },
-        });
+      if (linkedSpawnId) {
+        // This session belongs to a spawned agent: send updates to that ID, don't create new character
+        console.log(`Agent Arcade: Linked monitor session ${id} to spawned agent ${linkedSpawnId}`);
+        if (panel) {
+          panel.postMessage({
+            type: 'agentUpdate',
+            payload: {
+              id: linkedSpawnId,
+              state: agent.activity,
+              taskSummary: agent.lastMessage || 'Working...',
+            },
+          });
+        }
+      } else {
+        // Genuinely new agent: create character
+        const variant = getVariantForAgent(id);
+
+        if (panel) {
+          panel.postMessage({
+            type: 'agentAdd',
+            payload: {
+              id: agent.id,
+              name: agent.name,
+              variant,
+              model: agent.model,
+              branch: agent.branch,
+              taskSummary: agent.lastMessage || 'Starting...',
+              parentId: agent.parentId || undefined,
+            },
+          });
+        }
       }
     } else {
       // Existing agent: check for state changes
       const prev = previousAgents.get(id)!;
       if (prev.activity !== agent.activity || prev.lastMessage !== agent.lastMessage) {
+        // Route updates to spawned agent if linked
+        const targetId = monitorToSpawnedMap.get(id) || agent.id;
+
         if (panel) {
           panel.postMessage({
             type: 'agentUpdate',
             payload: {
-              id: agent.id,
+              id: targetId,
               state: agent.activity,
               taskSummary: agent.lastMessage,
             },
@@ -142,21 +175,17 @@ function handleAgentChanges(agents: Map<string, DetectedAgent>): void {
             );
           }
 
-          // If this agent has sub-agents and just completed, trigger their departure
           if (agent.spawnedChildIds.length > 0 && panel) {
             panel.postMessage({
               type: 'agentDepartSubAgents',
-              payload: { parentId: agent.id },
+              payload: { parentId: targetId },
             });
           }
         }
       }
 
-      // Detect newly spawned children (compare child arrays)
+      // Detect newly spawned children
       if (agent.spawnedChildIds.length > prev.spawnedChildIds.length) {
-        // New sub-agents were spawned. The new children will be picked up
-        // as new agents in the next iteration. The webview handles the
-        // spawning animation when it receives agentAdd with a parentId.
         console.log(
           `Agent Arcade: ${agent.name} spawned ${agent.spawnedChildIds.length - prev.spawnedChildIds.length} sub-agent(s)`
         );
@@ -216,6 +245,8 @@ function setupPanelBridge(panel: AgentArcadePanel): void {
       case 'agentClicked': {
         const payload = msg.payload as { id: string; name: string };
         console.log(`Agent Arcade: Agent clicked - ${payload.name} (${payload.id})`);
+        // Focus the agent's terminal
+        focusAgentTerminal(payload.id);
         break;
       }
       case 'agentDeparted': {
@@ -226,6 +257,11 @@ function setupPanelBridge(panel: AgentArcadePanel): void {
       case 'spawnAgent': {
         const payload = msg.payload as { prompt: string };
         spawnClaudeCodeAgent(payload.prompt);
+        break;
+      }
+      case 'killAgent': {
+        const payload = msg.payload as { id: string };
+        killAgentTerminal(payload.id);
         break;
       }
     }
@@ -242,8 +278,12 @@ function spawnClaudeCodeAgent(prompt: string): void {
   const variant = getVariantForAgent(agentId);
   const terminalName = agentName;
 
-  // Build the command
-  let command = 'claude --dangerously-skip-permissions';
+  // Build the command – use full path to avoid shell alias issues
+  // and explicit --permission-mode to guarantee bypass mode
+  const claudeBin = process.env.HOME
+    ? `${process.env.HOME}/.local/bin/claude`
+    : 'claude';
+  let command = `${claudeBin} --dangerously-skip-permissions`;
   if (prompt) {
     const escaped = prompt.replace(/'/g, "'\\''");
     command += ` -p '${escaped}'`;
@@ -279,6 +319,8 @@ function spawnClaudeCodeAgent(prompt: string): void {
 
   // Track spawned agents so they can be removed when terminal closes
   spawnedTerminals.set(terminal, agentId);
+  // Register timestamp so monitor can link its detected session to this agent
+  spawnedAgentTimestamps.set(agentId, Date.now());
 
   vscode.window.showInformationMessage(
     `Agent Arcade: ${agentName} has entered the office`
@@ -287,6 +329,70 @@ function spawnClaudeCodeAgent(prompt: string): void {
 
 /** Track terminals to agent IDs for cleanup on close */
 const spawnedTerminals = new Map<vscode.Terminal, string>();
+
+/** Focus (show) the terminal associated with an agent */
+function focusAgentTerminal(agentId: string): void {
+  spawnedTerminals.forEach((id, terminal) => {
+    if (id === agentId) {
+      terminal.show(false);
+    }
+  });
+}
+
+/**
+ * Try to link a newly detected monitor session to a recently spawned agent.
+ * Returns the spawned agent ID if linked, null otherwise.
+ */
+function tryLinkToSpawnedAgent(monitorSessionId: string): string | null {
+  // Already linked?
+  if (monitorToSpawnedMap.has(monitorSessionId)) {
+    return monitorToSpawnedMap.get(monitorSessionId)!;
+  }
+
+  const now = Date.now();
+
+  // Find a spawned agent that hasn't been linked yet (within time window)
+  for (const [spawnedId, spawnTime] of spawnedAgentTimestamps) {
+    if (now - spawnTime > SPAWN_LINK_WINDOW_MS) continue;
+
+    // Check if this spawned ID is already linked to a different session
+    let alreadyLinked = false;
+    monitorToSpawnedMap.forEach((linkedSpawnId) => {
+      if (linkedSpawnId === spawnedId) alreadyLinked = true;
+    });
+    if (alreadyLinked) continue;
+
+    // Link them
+    monitorToSpawnedMap.set(monitorSessionId, spawnedId);
+    return spawnedId;
+  }
+
+  return null;
+}
+
+/** Kill an agent's terminal and remove its character instantly */
+function killAgentTerminal(agentId: string): void {
+  // Find the terminal for this agent
+  let targetTerminal: vscode.Terminal | null = null;
+  spawnedTerminals.forEach((id, terminal) => {
+    if (id === agentId) {
+      targetTerminal = terminal;
+    }
+  });
+
+  if (targetTerminal) {
+    // Dispose kills the terminal process
+    (targetTerminal as vscode.Terminal).dispose();
+    spawnedTerminals.delete(targetTerminal);
+    console.log(`Agent Arcade: Killed terminal for agent ${agentId}`);
+  } else {
+    console.log(`Agent Arcade: No terminal found for agent ${agentId}, removing character only`);
+  }
+
+  // Update status bar
+  currentAgentCount = Math.max(0, currentAgentCount - 1);
+  updateStatusBar(currentAgentCount);
+}
 
 export function deactivate(): void {
   if (monitor) {
